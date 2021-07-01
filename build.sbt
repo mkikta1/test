@@ -1,48 +1,46 @@
-name := "elastic4play"
+import Common._
 
-organization := "org.cert-bdf"
-
-organizationName := "CERT-BDF"
-
-organizationHomepage := Some(url("https://thehive-project.org/"))
-
-licenses += "AGPL-V3" -> url("https://www.gnu.org/licenses/agpl-3.0.html")
-
-lazy val elastic4play = (project in file("."))
+lazy val cortex = (project in file("."))
   .enablePlugins(PlayScala)
-
-scalaVersion := "2.12.4"
-
-resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven"
+  .enablePlugins(Bintray)
+  .settings(projectSettings)
 
 libraryDependencies ++= Seq(
-  cacheApi,
-  "com.sksamuel.elastic4s" %% "elastic4s-core" % "5.6.0",
-  "com.sksamuel.elastic4s" %% "elastic4s-streams" % "5.6.0",
-  "com.sksamuel.elastic4s" %% "elastic4s-tcp" % "5.6.0",
-  "com.sksamuel.elastic4s" %% "elastic4s-xpack-security" % "5.6.0",
-  "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.6" % Test,
-  "org.scalactic" %% "scalactic" % "3.0.4",
-  "org.bouncycastle" % "bcprov-jdk15on" % "1.58",
-  specs2 % Test
+  Dependencies.Play.cache,
+  Dependencies.Play.ws,
+  Dependencies.Play.ahc,
+  Dependencies.Play.specs2 % Test,
+  Dependencies.Play.guice,
+  Dependencies.scalaGuice,
+  Dependencies.elastic4play,
+  Dependencies.reflections,
+  Dependencies.zip4j,
+  Dependencies.dockerClient
 )
 
-PlayKeys.externalizeResources := false
+resolvers += Resolver.sbtPluginRepo("releases")
+resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
+resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven"
+publishArtifact in (Compile, packageDoc) := false
+publishArtifact in packageDoc := false
+sources in (Compile,doc) := Seq.empty
 
-bintrayOrganization := Some("cert-bdf")
+// Front-end //
+mappings in packageBin in Assets ++= frontendFiles.value
 
-bintrayRepository := "elastic4play"
+packageBin := {
+  (packageBin in Debian).value
+  (packageBin in Rpm).value
+  (packageBin in Universal).value
+}
 
-publishMavenStyle := true
-
-scalacOptions in ThisBuild ++= Seq(
-  "-encoding", "UTF-8",
-  "-deprecation", // warning and location for usages of deprecated APIs
-  "-feature", // warning and location for usages of features that should be imported explicitly
-  "-unchecked", // additional warnings where generated code depends on assumptions
-  "-Xlint", // recommended additional warnings
-  "-Ywarn-adapted-args", // Warn if an argument list is modified to match the receiver
-  "-Ywarn-value-discard", // Warn when non-Unit expression results are unused
-  "-Ywarn-inaccessible",
-  "-Ywarn-dead-code"
-)
+// Bintray //
+bintrayOrganization := Some("thehive-project")
+bintrayRepository := "cortex"
+publish := {
+  (publish in Docker).value
+  publishRelease.value
+  publishLatest.value
+  publishRpm.value
+  publishDebian.value
+}
